@@ -1,5 +1,7 @@
 module Main exposing (main)
 
+import AssocList
+import AssocList.Extra
 import Browser exposing (Document)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
@@ -23,7 +25,7 @@ main =
 
 
 type alias Model =
-    { lapRecords : List LapRecord
+    { lapRecordsByCarNumber : List ( String, List LapRecord )
     }
 
 
@@ -83,7 +85,7 @@ lapRecordDecoder =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { lapRecords = [] }
+    ( { lapRecordsByCarNumber = [] }
     , Http.get
         { url = "23_Analysis_Race_Hour 6.csv"
         , expect = Http.expectString Loaded
@@ -105,7 +107,12 @@ update msg model =
         Loaded (Ok csvString) ->
             ( case decodeString lapRecordDecoder csvString of
                 Ok lapRecords ->
-                    { model | lapRecords = lapRecords }
+                    { model
+                        | lapRecordsByCarNumber =
+                            lapRecords
+                                |> AssocList.Extra.groupBy .carNumber
+                                |> AssocList.toList
+                    }
 
                 Err _ ->
                     model
@@ -129,7 +136,7 @@ decodeString decoder =
 
 
 view : Model -> Document Msg
-view { lapRecords } =
+view { lapRecordsByCarNumber } =
     { title = ""
     , body =
         [ main_ []
@@ -140,13 +147,19 @@ view { lapRecords } =
                             [ "NUMBER", "LAP_NUMBER", "LAP_TIME", "S1", "S2", "S3", "KPH", "ELAPSED", "HOUR", "TOP_SPEED", "DRIVER_NAME", "PIT_TIME", "CLASS", "GROUP", "TEAM", "MANUFACTURER" ]
                     ]
                 , tbody [] <|
-                    List.map
-                        (\lap ->
+                    let
+                        tableRow lap =
                             tr [] <|
                                 List.map (\getter -> td [] [ text <| getter lap ])
                                     [ .carNumber, .lapNumber, .lapTime, .s1, .s2, .s3, .kph, .elapsed, .hour, .topSpeed, .driverName, .pitTime, .class, .group, .team, .manufacturer ]
+                    in
+                    List.map
+                        (Tuple.second
+                            >> List.head
+                            >> Maybe.map tableRow
+                            >> Maybe.withDefault (text "")
                         )
-                        lapRecords
+                        lapRecordsByCarNumber
                 ]
             ]
         ]

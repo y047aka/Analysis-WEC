@@ -2,7 +2,7 @@
   "scripts": {
     "start": "parcel src/index.html",
     "prestart": "rm -rf dist && mkdir dist && cp \"static/23_Analysis_Race_Hour 6.csv\" dist",
-    "build": "parcel build src/index.html -d docs --public-url ./",
+    "build": "parcel build src/index.html -d docs --public-url /Analysis-WEC/",
     "prebuild": "rm -rf docs && mkdir docs && cp \"static/23_Analysis_Race_Hour 6.csv\" docs",
     "deploy": "gh-pages -d dist"
   },

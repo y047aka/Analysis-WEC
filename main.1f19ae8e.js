@@ -12338,6 +12338,15 @@ var $ericgj$elm_csv_decode$Csv$Decode$field = F2(
 				}
 			});
 	});
+var $elm$core$Result$fromMaybe = F2(
+	function (err, maybe) {
+		if (maybe.$ === 'Just') {
+			var v = maybe.a;
+			return $elm$core$Result$Ok(v);
+		} else {
+			return $elm$core$Result$Err(err);
+		}
+	});
 var $ericgj$elm_csv_decode$Csv$Decode$mapHelp = F2(
 	function (fn, _v0) {
 		var visited = _v0.visited;
@@ -12364,73 +12373,195 @@ var $ericgj$elm_csv_decode$Csv$Decode$map = F2(
 						{unvisited: unvisited, value: subValue, visited: visited}));
 			});
 	});
-var $author$project$Main$lapRecordDecoder = A2(
-	$ericgj$elm_csv_decode$Csv$Decode$map,
-	$author$project$Main$LapRecord,
-	A2(
-		$ericgj$elm_csv_decode$Csv$Decode$andMap,
-		A2($ericgj$elm_csv_decode$Csv$Decode$field, 'MANUFACTURER', $elm$core$Result$Ok),
+var $elm$core$Maybe$map2 = F3(
+	function (func, ma, mb) {
+		if (ma.$ === 'Nothing') {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				return $elm$core$Maybe$Just(
+					A2(func, a, b));
+			}
+		}
+	});
+var $elm$core$Maybe$map3 = F4(
+	function (func, ma, mb, mc) {
+		if (ma.$ === 'Nothing') {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				if (mc.$ === 'Nothing') {
+					return $elm$core$Maybe$Nothing;
+				} else {
+					var c = mc.a;
+					return $elm$core$Maybe$Just(
+						A3(func, a, b, c));
+				}
+			}
+		}
+	});
+var $elm$core$String$toFloat = _String_toFloat;
+var $author$project$Main$timeMilliStringToMillis = function (str) {
+	var fromSeconds = function (s) {
+		return A2(
+			$elm$core$Maybe$map,
+			A2(
+				$elm$core$Basics$composeR,
+				$elm$core$Basics$mul(1000),
+				$elm$core$Basics$floor),
+			$elm$core$String$toFloat(s));
+	};
+	var fromMinutes = function (m) {
+		return A2(
+			$elm$core$Maybe$map,
+			$elm$core$Basics$mul(60000),
+			$elm$core$String$toInt(m));
+	};
+	var fromHours = function (h) {
+		return A2(
+			$elm$core$Maybe$map,
+			$elm$core$Basics$mul(3600000),
+			$elm$core$String$toInt(h));
+	};
+	var _v0 = A2($elm$core$String$split, ':', str);
+	_v0$3:
+	while (true) {
+		if (_v0.b) {
+			if (_v0.b.b) {
+				if (_v0.b.b.b) {
+					if (!_v0.b.b.b.b) {
+						var h = _v0.a;
+						var _v1 = _v0.b;
+						var m = _v1.a;
+						var _v2 = _v1.b;
+						var s = _v2.a;
+						return A4(
+							$elm$core$Maybe$map3,
+							F3(
+								function (h_, m_, s_) {
+									return (h_ + m_) + s_;
+								}),
+							fromHours(h),
+							fromMinutes(m),
+							fromSeconds(s));
+					} else {
+						break _v0$3;
+					}
+				} else {
+					var m = _v0.a;
+					var _v3 = _v0.b;
+					var s = _v3.a;
+					return A3(
+						$elm$core$Maybe$map2,
+						$elm$core$Basics$add,
+						fromMinutes(m),
+						fromSeconds(s));
+				}
+			} else {
+				var s = _v0.a;
+				return fromSeconds(s);
+			}
+		} else {
+			break _v0$3;
+		}
+	}
+	return $elm$core$Maybe$Nothing;
+};
+var $author$project$Main$lapRecordDecoder = function () {
+	var timeMilliStringToMillisResult = function (s) {
+		return A2(
+			$elm$core$Result$fromMaybe,
+			'Cannot convert \'' + (s + '\' to Int'),
+			$author$project$Main$timeMilliStringToMillis(s));
+	};
+	var stringToIntResult = function (s) {
+		return A2(
+			$elm$core$Result$fromMaybe,
+			'Cannot convert \'' + (s + '\' to Int'),
+			$elm$core$String$toInt(s));
+	};
+	var stringToFloatResult = function (s) {
+		return A2(
+			$elm$core$Result$fromMaybe,
+			'Cannot convert \'' + (s + '\' to Float'),
+			$elm$core$String$toFloat(s));
+	};
+	return A2(
+		$ericgj$elm_csv_decode$Csv$Decode$map,
+		$author$project$Main$LapRecord,
 		A2(
 			$ericgj$elm_csv_decode$Csv$Decode$andMap,
-			A2($ericgj$elm_csv_decode$Csv$Decode$field, 'TEAM', $elm$core$Result$Ok),
+			A2($ericgj$elm_csv_decode$Csv$Decode$field, 'MANUFACTURER', $elm$core$Result$Ok),
 			A2(
 				$ericgj$elm_csv_decode$Csv$Decode$andMap,
-				A2($ericgj$elm_csv_decode$Csv$Decode$field, 'GROUP', $elm$core$Result$Ok),
+				A2($ericgj$elm_csv_decode$Csv$Decode$field, 'TEAM', $elm$core$Result$Ok),
 				A2(
 					$ericgj$elm_csv_decode$Csv$Decode$andMap,
-					A2($ericgj$elm_csv_decode$Csv$Decode$field, 'CLASS', $elm$core$Result$Ok),
+					A2($ericgj$elm_csv_decode$Csv$Decode$field, 'GROUP', $elm$core$Result$Ok),
 					A2(
 						$ericgj$elm_csv_decode$Csv$Decode$andMap,
-						A2($ericgj$elm_csv_decode$Csv$Decode$field, 'PIT_TIME', $elm$core$Result$Ok),
+						A2($ericgj$elm_csv_decode$Csv$Decode$field, 'CLASS', $elm$core$Result$Ok),
 						A2(
 							$ericgj$elm_csv_decode$Csv$Decode$andMap,
-							A2($ericgj$elm_csv_decode$Csv$Decode$field, 'DRIVER_NAME', $elm$core$Result$Ok),
+							A2($ericgj$elm_csv_decode$Csv$Decode$field, 'PIT_TIME', $elm$core$Result$Ok),
 							A2(
 								$ericgj$elm_csv_decode$Csv$Decode$andMap,
-								A2($ericgj$elm_csv_decode$Csv$Decode$field, 'TOP_SPEED', $elm$core$Result$Ok),
+								A2($ericgj$elm_csv_decode$Csv$Decode$field, 'DRIVER_NAME', $elm$core$Result$Ok),
 								A2(
 									$ericgj$elm_csv_decode$Csv$Decode$andMap,
-									A2($ericgj$elm_csv_decode$Csv$Decode$field, 'HOUR', $elm$core$Result$Ok),
+									A2($ericgj$elm_csv_decode$Csv$Decode$field, 'TOP_SPEED', stringToFloatResult),
 									A2(
 										$ericgj$elm_csv_decode$Csv$Decode$andMap,
-										A2($ericgj$elm_csv_decode$Csv$Decode$field, 'ELAPSED', $elm$core$Result$Ok),
+										A2($ericgj$elm_csv_decode$Csv$Decode$field, 'HOUR', timeMilliStringToMillisResult),
 										A2(
 											$ericgj$elm_csv_decode$Csv$Decode$andMap,
-											A2($ericgj$elm_csv_decode$Csv$Decode$field, 'KPH', $elm$core$Result$Ok),
+											A2($ericgj$elm_csv_decode$Csv$Decode$field, 'ELAPSED', timeMilliStringToMillisResult),
 											A2(
 												$ericgj$elm_csv_decode$Csv$Decode$andMap,
-												A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S3_IMPROVEMENT', $elm$core$Result$Ok),
+												A2($ericgj$elm_csv_decode$Csv$Decode$field, 'KPH', stringToFloatResult),
 												A2(
 													$ericgj$elm_csv_decode$Csv$Decode$andMap,
-													A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S3', $elm$core$Result$Ok),
+													A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S3_IMPROVEMENT', stringToIntResult),
 													A2(
 														$ericgj$elm_csv_decode$Csv$Decode$andMap,
-														A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S2_IMPROVEMENT', $elm$core$Result$Ok),
+														A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S3', timeMilliStringToMillisResult),
 														A2(
 															$ericgj$elm_csv_decode$Csv$Decode$andMap,
-															A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S2', $elm$core$Result$Ok),
+															A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S2_IMPROVEMENT', stringToIntResult),
 															A2(
 																$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S1_IMPROVEMENT', $elm$core$Result$Ok),
+																A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S2', timeMilliStringToMillisResult),
 																A2(
 																	$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																	A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S1', $elm$core$Result$Ok),
+																	A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S1_IMPROVEMENT', stringToIntResult),
 																	A2(
 																		$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																		A2($ericgj$elm_csv_decode$Csv$Decode$field, 'CROSSING_FINISH_LINE_IN_PIT', $elm$core$Result$Ok),
+																		A2($ericgj$elm_csv_decode$Csv$Decode$field, 'S1', timeMilliStringToMillisResult),
 																		A2(
 																			$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																			A2($ericgj$elm_csv_decode$Csv$Decode$field, 'LAP_IMPROVEMENT', $elm$core$Result$Ok),
+																			A2($ericgj$elm_csv_decode$Csv$Decode$field, 'CROSSING_FINISH_LINE_IN_PIT', $elm$core$Result$Ok),
 																			A2(
 																				$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																				A2($ericgj$elm_csv_decode$Csv$Decode$field, 'LAP_TIME', $elm$core$Result$Ok),
+																				A2($ericgj$elm_csv_decode$Csv$Decode$field, 'LAP_IMPROVEMENT', stringToIntResult),
 																				A2(
 																					$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																					A2($ericgj$elm_csv_decode$Csv$Decode$field, 'LAP_NUMBER', $elm$core$Result$Ok),
+																					A2($ericgj$elm_csv_decode$Csv$Decode$field, 'LAP_TIME', timeMilliStringToMillisResult),
 																					A2(
 																						$ericgj$elm_csv_decode$Csv$Decode$andMap,
-																						A2($ericgj$elm_csv_decode$Csv$Decode$field, 'DRIVER_NUMBER', $elm$core$Result$Ok),
-																						A2($ericgj$elm_csv_decode$Csv$Decode$field, 'NUMBER', $elm$core$Result$Ok)))))))))))))))))))))));
+																						A2($ericgj$elm_csv_decode$Csv$Decode$field, 'LAP_NUMBER', stringToIntResult),
+																						A2(
+																							$ericgj$elm_csv_decode$Csv$Decode$andMap,
+																							A2($ericgj$elm_csv_decode$Csv$Decode$field, 'DRIVER_NUMBER', stringToIntResult),
+																							A2($ericgj$elm_csv_decode$Csv$Decode$field, 'NUMBER', stringToIntResult)))))))))))))))))))))));
+}();
 var $pzp1997$assoc_list$AssocList$toList = function (_v0) {
 	var alist = _v0.a;
 	return alist;
@@ -12474,6 +12605,75 @@ var $elm$core$List$head = function (list) {
 	}
 };
 var $elm$html$Html$main_ = _VirtualDom_node('main');
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $elm$core$String$padLeft = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)),
+			string);
+	});
+var $elm$core$String$padRight = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			string,
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)));
+	});
+var $author$project$Main$millisToTimeMilliString = function (millis) {
+	var s = A3(
+		$elm$core$String$padLeft,
+		2,
+		_Utils_chr('0'),
+		$elm$core$String$fromInt(((millis % 60000) / 1000) | 0));
+	var ms = '.' + A3(
+		$elm$core$String$padRight,
+		3,
+		_Utils_chr('0'),
+		$elm$core$String$fromInt(millis % 1000));
+	var m = A3(
+		$elm$core$String$padLeft,
+		2,
+		_Utils_chr('0'),
+		$elm$core$String$fromInt(((millis % 3600000) / 60000) | 0));
+	var h = A3(
+		$elm$core$String$padLeft,
+		2,
+		_Utils_chr('0'),
+		$elm$core$String$fromInt((millis / 3600000) | 0));
+	return (millis >= 3600000) ? A2(
+		$elm$core$String$join,
+		':',
+		_List_fromArray(
+			[
+				h,
+				m,
+				_Utils_ap(s, ms)
+			])) : A2(
+		$elm$core$String$join,
+		':',
+		_List_fromArray(
+			[
+				m,
+				_Utils_ap(s, ms)
+			]));
+};
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$tbody = _VirtualDom_node('tbody');
 var $elm$html$Html$td = _VirtualDom_node('td');
@@ -12539,36 +12739,66 @@ var $author$project$Main$view = function (_v0) {
 												},
 												_List_fromArray(
 													[
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.carNumber;
-													},
+															return $.carNumber;
+														},
+														$elm$core$String$fromInt),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.lapNumber;
-													},
+															return $.lapNumber;
+														},
+														$elm$core$String$fromInt),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.lapTime;
-													},
+															return $.lapTime;
+														},
+														$author$project$Main$millisToTimeMilliString),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.s1;
-													},
+															return $.s1;
+														},
+														$author$project$Main$millisToTimeMilliString),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.s2;
-													},
+															return $.s2;
+														},
+														$author$project$Main$millisToTimeMilliString),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.s3;
-													},
+															return $.s3;
+														},
+														$author$project$Main$millisToTimeMilliString),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.kph;
-													},
+															return $.kph;
+														},
+														$elm$core$String$fromFloat),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.elapsed;
-													},
+															return $.elapsed;
+														},
+														$author$project$Main$millisToTimeMilliString),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.hour;
-													},
+															return $.hour;
+														},
+														$author$project$Main$millisToTimeMilliString),
+														A2(
+														$elm$core$Basics$composeR,
 														function ($) {
-														return $.topSpeed;
-													},
+															return $.topSpeed;
+														},
+														$elm$core$String$fromFloat),
 														function ($) {
 														return $.driverName;
 													},
@@ -13189,7 +13419,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49271" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50491" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

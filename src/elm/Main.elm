@@ -25,27 +25,27 @@ main =
 
 
 type alias Model =
-    { lapRecordsByCarNumber : List ( String, List LapRecord )
+    { lapRecordsByCarNumber : List ( Int, List LapRecord )
     }
 
 
 type alias LapRecord =
-    { carNumber : String
-    , driverNumber : String
-    , lapNumber : String
-    , lapTime : String
-    , lapImprovement : String
+    { carNumber : Int
+    , driverNumber : Int
+    , lapNumber : Int
+    , lapTime : Int
+    , lapImprovement : Int
     , crossingFinishLineInPit : String
-    , s1 : String
-    , s1Improvement : String
-    , s2 : String
-    , s2Improvement : String
-    , s3 : String
-    , s3Improvement : String
-    , kph : String
-    , elapsed : String
-    , hour : String
-    , topSpeed : String
+    , s1 : Int
+    , s1Improvement : Int
+    , s2 : Int
+    , s2Improvement : Int
+    , s3 : Int
+    , s3Improvement : Int
+    , kph : Float
+    , elapsed : Int
+    , hour : Int
+    , topSpeed : Float
     , driverName : String
     , pitTime : String
     , class : String
@@ -57,23 +57,39 @@ type alias LapRecord =
 
 lapRecordDecoder : Decoder (LapRecord -> a) a
 lapRecordDecoder =
+    let
+        stringToIntResult : String -> Result String Int
+        stringToIntResult s =
+            String.toInt s
+                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Int")
+
+        stringToFloatResult : String -> Result String Float
+        stringToFloatResult s =
+            String.toFloat s
+                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Float")
+
+        timeMilliStringToMillisResult : String -> Result String Int
+        timeMilliStringToMillisResult s =
+            timeMilliStringToMillis s
+                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Int")
+    in
     CD.map LapRecord
-        (CD.field "NUMBER" Ok
-            |> CD.andMap (CD.field "DRIVER_NUMBER" Ok)
-            |> CD.andMap (CD.field "LAP_NUMBER" Ok)
-            |> CD.andMap (CD.field "LAP_TIME" Ok)
-            |> CD.andMap (CD.field "LAP_IMPROVEMENT" Ok)
+        (CD.field "NUMBER" stringToIntResult
+            |> CD.andMap (CD.field "DRIVER_NUMBER" stringToIntResult)
+            |> CD.andMap (CD.field "LAP_NUMBER" stringToIntResult)
+            |> CD.andMap (CD.field "LAP_TIME" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "LAP_IMPROVEMENT" stringToIntResult)
             |> CD.andMap (CD.field "CROSSING_FINISH_LINE_IN_PIT" Ok)
-            |> CD.andMap (CD.field "S1" Ok)
-            |> CD.andMap (CD.field "S1_IMPROVEMENT" Ok)
-            |> CD.andMap (CD.field "S2" Ok)
-            |> CD.andMap (CD.field "S2_IMPROVEMENT" Ok)
-            |> CD.andMap (CD.field "S3" Ok)
-            |> CD.andMap (CD.field "S3_IMPROVEMENT" Ok)
-            |> CD.andMap (CD.field "KPH" Ok)
-            |> CD.andMap (CD.field "ELAPSED" Ok)
-            |> CD.andMap (CD.field "HOUR" Ok)
-            |> CD.andMap (CD.field "TOP_SPEED" Ok)
+            |> CD.andMap (CD.field "S1" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "S1_IMPROVEMENT" stringToIntResult)
+            |> CD.andMap (CD.field "S2" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "S2_IMPROVEMENT" stringToIntResult)
+            |> CD.andMap (CD.field "S3" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "S3_IMPROVEMENT" stringToIntResult)
+            |> CD.andMap (CD.field "KPH" stringToFloatResult)
+            |> CD.andMap (CD.field "ELAPSED" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "HOUR" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "TOP_SPEED" stringToFloatResult)
             |> CD.andMap (CD.field "DRIVER_NAME" Ok)
             |> CD.andMap (CD.field "PIT_TIME" Ok)
             |> CD.andMap (CD.field "CLASS" Ok)
@@ -151,7 +167,23 @@ view { lapRecordsByCarNumber } =
                         tableRow lap =
                             tr [] <|
                                 List.map (\getter -> td [] [ text <| getter lap ])
-                                    [ .carNumber, .lapNumber, .lapTime, .s1, .s2, .s3, .kph, .elapsed, .hour, .topSpeed, .driverName, .pitTime, .class, .group, .team, .manufacturer ]
+                                    [ .carNumber >> String.fromInt
+                                    , .lapNumber >> String.fromInt
+                                    , .lapTime >> millisToTimeMilliString
+                                    , .s1 >> millisToTimeMilliString
+                                    , .s2 >> millisToTimeMilliString
+                                    , .s3 >> millisToTimeMilliString
+                                    , .kph >> String.fromFloat
+                                    , .elapsed >> millisToTimeMilliString
+                                    , .hour >> millisToTimeMilliString
+                                    , .topSpeed >> String.fromFloat
+                                    , .driverName
+                                    , .pitTime
+                                    , .class
+                                    , .group
+                                    , .team
+                                    , .manufacturer
+                                    ]
                     in
                     List.map
                         (Tuple.second

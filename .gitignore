@@ -1,11 +1,14 @@
-# Dependency directory
-node_modules
+# NPM dependency directory
+/node_modules
 
 # Parcel Cash directory
-.cache
+/.cache
 
 # Elm Dependency directory
-elm-stuff
+/elm-stuff
 
-# Default directory at "npm start"
-dist
+# `npm start`
+/dist
+
+# `elm-verify-examples`
+/tests/VerifyExamples

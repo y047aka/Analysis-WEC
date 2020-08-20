@@ -4,6 +4,9 @@
     "prestart": "rm -rf dist && mkdir dist && cp \"static/23_Analysis_Race_Hour 6.csv\" dist",
     "build": "parcel build src/index.html -d docs --public-url /Analysis-WEC/",
     "prebuild": "rm -rf docs && mkdir docs && cp \"static/23_Analysis_Race_Hour 6.csv\" docs",
+    "pretest": "elm-verify-examples",
+    "test": "elm-test tests",
+    "posttest": "rm -rf tests/VerifyExamples",
     "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
@@ -13,6 +16,7 @@
     "elm-hot": "^1.1.5",
     "elm-json": "^0.2.7",
     "elm-test": "^0.19.1-revision2",
+    "elm-verify-examples": "^5.0.0",
     "fomantic-ui-css": "^2.8.6",
     "gh-pages": "^3.1.0",
     "parcel-bundler": "^1.12.4",

@@ -6,7 +6,7 @@ import Browser exposing (Document)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
 import Html exposing (main_, table, tbody, td, text, th, thead, tr)
-import Http
+import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import Parser exposing (deadEndsToString)
 
 
@@ -104,9 +104,49 @@ init _ =
     ( { lapRecordsByCarNumber = [] }
     , Http.get
         { url = "23_Analysis_Race_Hour 6.csv"
-        , expect = Http.expectString Loaded
+        , expect = expectCsv Loaded lapRecordDecoder
         }
     )
+
+
+expectCsv : (Result Error (List a) -> msg) -> Decoder (a -> a) a -> Expect msg
+expectCsv toMsg decoder =
+    let
+        resolve : (body -> Result String (List a)) -> Response body -> Result Error (List a)
+        resolve toResult response =
+            case response of
+                BadUrl_ url ->
+                    Err (BadUrl url)
+
+                Timeout_ ->
+                    Err Timeout
+
+                NetworkError_ ->
+                    Err NetworkError
+
+                BadStatus_ metadata _ ->
+                    Err (BadStatus metadata.statusCode)
+
+                GoodStatus_ _ body ->
+                    Result.mapError BadBody (toResult body)
+
+        errorsToString : Errors -> String
+        errorsToString error =
+            case error of
+                CsvErrors _ ->
+                    "Parse failed."
+
+                DecodeErrors _ ->
+                    "Decode failed."
+    in
+    expectStringResponse toMsg <|
+        resolve
+            (Csv.parseWith ';'
+                >> Result.map (\csv -> { csv | headers = List.map String.trim csv.headers })
+                >> Result.mapError (deadEndsToString >> List.singleton >> CsvErrors)
+                >> Result.andThen (CD.decodeCsv decoder)
+                >> Result.mapError errorsToString
+            )
 
 
 
@@ -114,37 +154,24 @@ init _ =
 
 
 type Msg
-    = Loaded (Result Http.Error String)
+    = Loaded (Result Http.Error (List LapRecord))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Loaded (Ok csvString) ->
-            ( case decodeString lapRecordDecoder csvString of
-                Ok lapRecords ->
-                    { model
-                        | lapRecordsByCarNumber =
-                            lapRecords
-                                |> AssocList.Extra.groupBy .carNumber
-                                |> AssocList.toList
-                    }
-
-                Err _ ->
-                    model
+        Loaded (Ok lapRecords) ->
+            ( { model
+                | lapRecordsByCarNumber =
+                    lapRecords
+                        |> AssocList.Extra.groupBy .carNumber
+                        |> AssocList.toList
+              }
             , Cmd.none
             )
 
         Loaded (Err _) ->
             ( model, Cmd.none )
-
-
-decodeString : Decoder (a -> a) a -> String -> Result Errors (List a)
-decodeString decoder =
-    Csv.parseWith ';'
-        >> Result.map (\csv -> { csv | headers = List.map String.trim csv.headers })
-        >> Result.mapError (deadEndsToString >> List.singleton >> CsvErrors)
-        >> Result.andThen (CD.decodeCsv decoder)
 
 
 

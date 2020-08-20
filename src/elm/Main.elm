@@ -1,4 +1,4 @@
-module Main exposing (main)
+module Main exposing (main, millisToTimeMilliString, timeMilliStringToMillis)
 
 import AssocList
 import AssocList.Extra
@@ -164,3 +164,99 @@ view { lapRecordsByCarNumber } =
             ]
         ]
     }
+
+
+
+-- HELPER
+
+
+{-|
+
+    timeMilliStringToMillis "0.000"
+    --> Just 0
+
+    timeMilliStringToMillis "4.321"
+    --> Just 4321
+
+    timeMilliStringToMillis "06:54.321"
+    --> Just 414321
+
+    timeMilliStringToMillis "7:06:54.321"
+    --> Just 25614321
+
+-}
+timeMilliStringToMillis : String -> Maybe Int
+timeMilliStringToMillis str =
+    let
+        fromHours h =
+            String.toInt h |> Maybe.map ((*) 3600000)
+
+        fromMinutes m =
+            String.toInt m |> Maybe.map ((*) 60000)
+
+        fromSeconds s =
+            String.toFloat s |> Maybe.map ((*) 1000 >> floor)
+    in
+    case String.split ":" str of
+        [ h, m, s ] ->
+            Maybe.map3 (\h_ m_ s_ -> h_ + m_ + s_)
+                (fromHours h)
+                (fromMinutes m)
+                (fromSeconds s)
+
+        [ m, s ] ->
+            Maybe.map2 (+)
+                (fromMinutes m)
+                (fromSeconds s)
+
+        [ s ] ->
+            fromSeconds s
+
+        _ ->
+            Nothing
+
+
+{-|
+
+    millisToTimeMilliString 0
+    --> "00:00.000"
+
+    millisToTimeMilliString 4321
+    --> "00:04.321"
+
+    millisToTimeMilliString 414321
+    --> "06:54.321"
+
+    millisToTimeMilliString 25614321
+    --> "07:06:54.321"
+
+-}
+millisToTimeMilliString : Int -> String
+millisToTimeMilliString millis =
+    let
+        h =
+            (millis // 3600000)
+                |> String.fromInt
+                |> String.padLeft 2 '0'
+
+        m =
+            (remainderBy 3600000 millis // 60000)
+                |> String.fromInt
+                |> String.padLeft 2 '0'
+
+        s =
+            (remainderBy 60000 millis // 1000)
+                |> String.fromInt
+                |> String.padLeft 2 '0'
+
+        ms =
+            remainderBy 1000 millis
+                |> String.fromInt
+                |> String.padRight 3 '0'
+                |> (++) "."
+    in
+    if millis >= 3600000 then
+        String.join ":" [ h, m, s ++ ms ]
+
+    else
+        String.join ":" [ m, s ++ ms ]

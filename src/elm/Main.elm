@@ -5,7 +5,8 @@ import AssocList.Extra
 import Browser exposing (Document)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
-import Data.RaceClock as RaceClock exposing (RaceClock)
+import Data.Lap exposing (Lap, lapDecoder)
+import Data.RaceClock as RaceClock
 import Html exposing (main_, table, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import Parser exposing (deadEndsToString)
@@ -26,86 +27,16 @@ main =
 
 
 type alias Model =
-    { lapRecordsByCarNumber : List ( Int, List LapRecord )
+    { lapsByCarNumber : List ( Int, List Lap )
     }
-
-
-type alias LapRecord =
-    { carNumber : Int
-    , driverNumber : Int
-    , lapNumber : Int
-    , lapTime : RaceClock
-    , lapImprovement : Int
-    , crossingFinishLineInPit : String
-    , s1 : RaceClock
-    , s1Improvement : Int
-    , s2 : RaceClock
-    , s2Improvement : Int
-    , s3 : RaceClock
-    , s3Improvement : Int
-    , kph : Float
-    , elapsed : RaceClock
-    , hour : RaceClock
-    , topSpeed : Float
-    , driverName : String
-    , pitTime : Maybe RaceClock
-    , class : String
-    , group : String
-    , team : String
-    , manufacturer : String
-    }
-
-
-lapRecordDecoder : Decoder (LapRecord -> a) a
-lapRecordDecoder =
-    let
-        stringToIntResult : String -> Result String Int
-        stringToIntResult s =
-            String.toInt s
-                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Int")
-
-        stringToFloatResult : String -> Result String Float
-        stringToFloatResult s =
-            String.toFloat s
-                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Float")
-
-        stringToRaceClockResult : String -> Result String Int
-        stringToRaceClockResult s =
-            RaceClock.fromString s
-                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Int")
-    in
-    CD.map LapRecord
-        (CD.field "NUMBER" stringToIntResult
-            |> CD.andMap (CD.field "DRIVER_NUMBER" stringToIntResult)
-            |> CD.andMap (CD.field "LAP_NUMBER" stringToIntResult)
-            |> CD.andMap (CD.field "LAP_TIME" stringToRaceClockResult)
-            |> CD.andMap (CD.field "LAP_IMPROVEMENT" stringToIntResult)
-            |> CD.andMap (CD.field "CROSSING_FINISH_LINE_IN_PIT" Ok)
-            |> CD.andMap (CD.field "S1" stringToRaceClockResult)
-            |> CD.andMap (CD.field "S1_IMPROVEMENT" stringToIntResult)
-            |> CD.andMap (CD.field "S2" stringToRaceClockResult)
-            |> CD.andMap (CD.field "S2_IMPROVEMENT" stringToIntResult)
-            |> CD.andMap (CD.field "S3" stringToRaceClockResult)
-            |> CD.andMap (CD.field "S3_IMPROVEMENT" stringToIntResult)
-            |> CD.andMap (CD.field "KPH" stringToFloatResult)
-            |> CD.andMap (CD.field "ELAPSED" stringToRaceClockResult)
-            |> CD.andMap (CD.field "HOUR" stringToRaceClockResult)
-            |> CD.andMap (CD.field "TOP_SPEED" stringToFloatResult)
-            |> CD.andMap (CD.field "DRIVER_NAME" Ok)
-            |> CD.andMap (CD.field "PIT_TIME" <| CD.maybe stringToRaceClockResult)
-            |> CD.andMap (CD.field "CLASS" Ok)
-            |> CD.andMap (CD.field "GROUP" Ok)
-            |> CD.andMap (CD.field "TEAM" Ok)
-            |> CD.andMap (CD.field "MANUFACTURER" Ok)
-        )
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { lapRecordsByCarNumber = [] }
+    ( { lapsByCarNumber = [] }
     , Http.get
         { url = "23_Analysis_Race_Hour 6.csv"
-        , expect = expectCsv Loaded lapRecordDecoder
+        , expect = expectCsv Loaded lapDecoder
         }
     )
 
@@ -155,16 +86,16 @@ expectCsv toMsg decoder =
 
 
 type Msg
-    = Loaded (Result Http.Error (List LapRecord))
+    = Loaded (Result Http.Error (List Lap))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Loaded (Ok lapRecords) ->
+        Loaded (Ok laps) ->
             ( { model
-                | lapRecordsByCarNumber =
-                    lapRecords
+                | lapsByCarNumber =
+                    laps
                         |> AssocList.Extra.groupBy .carNumber
                         |> AssocList.toList
               }
@@ -180,7 +111,7 @@ update msg model =
 
 
 view : Model -> Document Msg
-view { lapRecordsByCarNumber } =
+view { lapsByCarNumber } =
     { title = ""
     , body =
         [ main_ []
@@ -219,7 +150,7 @@ view { lapRecordsByCarNumber } =
                             >> Maybe.map tableRow
                             >> Maybe.withDefault (text "")
                         )
-                        lapRecordsByCarNumber
+                        lapsByCarNumber
                 ]
             ]
         ]

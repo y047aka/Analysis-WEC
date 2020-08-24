@@ -7,7 +7,7 @@ import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
 import Data.Lap exposing (Lap, lapDecoder)
 import Data.RaceClock as RaceClock
-import Html exposing (main_, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, main_, table, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import Parser exposing (deadEndsToString)
 
@@ -114,44 +114,47 @@ view : Model -> Document Msg
 view { lapsByCarNumber } =
     { title = ""
     , body =
-        [ main_ []
-            [ table []
-                [ thead []
-                    [ tr [] <|
-                        List.map (\heading -> th [] [ text heading ])
-                            [ "NUMBER", "LAP_NUMBER", "LAP_TIME", "S1", "S2", "S3", "KPH", "ELAPSED", "HOUR", "TOP_SPEED", "DRIVER_NAME", "PIT_TIME", "CLASS", "GROUP", "TEAM", "MANUFACTURER" ]
-                    ]
-                , tbody [] <|
-                    let
-                        tableRow lap =
-                            tr [] <|
-                                List.map (\getter -> td [] [ text <| getter lap ])
-                                    [ .carNumber >> String.fromInt
-                                    , .lapNumber >> String.fromInt
-                                    , .lapTime >> RaceClock.toString
-                                    , .s1 >> RaceClock.toString
-                                    , .s2 >> RaceClock.toString
-                                    , .s3 >> RaceClock.toString
-                                    , .kph >> String.fromFloat
-                                    , .elapsed >> RaceClock.toString
-                                    , .hour >> RaceClock.toString
-                                    , .topSpeed >> String.fromFloat
-                                    , .driverName
-                                    , .pitTime >> Maybe.map RaceClock.toString >> Maybe.withDefault ""
-                                    , .class
-                                    , .group
-                                    , .team
-                                    , .manufacturer
-                                    ]
-                    in
-                    List.map
-                        (Tuple.second
-                            >> List.head
-                            >> Maybe.map tableRow
-                            >> Maybe.withDefault (text "")
-                        )
-                        lapsByCarNumber
-                ]
-            ]
+        [ main_ [] [ decodeTestTable lapsByCarNumber ]
         ]
     }
+
+
+decodeTestTable : List ( Int, List Lap ) -> Html msg
+decodeTestTable lapsByCarNumber =
+    table []
+        [ thead []
+            [ tr [] <|
+                List.map (\heading -> th [] [ text heading ])
+                    [ "NUMBER", "LAP_NUMBER", "LAP_TIME", "S1", "S2", "S3", "KPH", "ELAPSED", "HOUR", "TOP_SPEED", "DRIVER_NAME", "PIT_TIME", "CLASS", "GROUP", "TEAM", "MANUFACTURER" ]
+            ]
+        , tbody [] <|
+            let
+                tableRow lap =
+                    tr [] <|
+                        List.map (\getter -> td [] [ text <| getter lap ])
+                            [ .carNumber >> String.fromInt
+                            , .lapNumber >> String.fromInt
+                            , .lapTime >> RaceClock.toString
+                            , .s1 >> RaceClock.toString
+                            , .s2 >> RaceClock.toString
+                            , .s3 >> RaceClock.toString
+                            , .kph >> String.fromFloat
+                            , .elapsed >> RaceClock.toString
+                            , .hour >> RaceClock.toString
+                            , .topSpeed >> String.fromFloat
+                            , .driverName
+                            , .pitTime >> Maybe.map RaceClock.toString >> Maybe.withDefault ""
+                            , .class
+                            , .group
+                            , .team
+                            , .manufacturer
+                            ]
+            in
+            List.map
+                (Tuple.second
+                    >> List.head
+                    >> Maybe.map tableRow
+                    >> Maybe.withDefault (text "")
+                )
+                lapsByCarNumber
+        ]

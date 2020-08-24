@@ -1,10 +1,11 @@
-module Main exposing (main, millisToTimeMilliString, timeMilliStringToMillis)
+module Main exposing (main)
 
 import AssocList
 import AssocList.Extra
 import Browser exposing (Document)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
+import Data.RaceClock as RaceClock exposing (RaceClock)
 import Html exposing (main_, table, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import Parser exposing (deadEndsToString)
@@ -33,21 +34,21 @@ type alias LapRecord =
     { carNumber : Int
     , driverNumber : Int
     , lapNumber : Int
-    , lapTime : Int
+    , lapTime : RaceClock
     , lapImprovement : Int
     , crossingFinishLineInPit : String
-    , s1 : Int
+    , s1 : RaceClock
     , s1Improvement : Int
-    , s2 : Int
+    , s2 : RaceClock
     , s2Improvement : Int
-    , s3 : Int
+    , s3 : RaceClock
     , s3Improvement : Int
     , kph : Float
-    , elapsed : Int
-    , hour : Int
+    , elapsed : RaceClock
+    , hour : RaceClock
     , topSpeed : Float
     , driverName : String
-    , pitTime : String
+    , pitTime : Maybe RaceClock
     , class : String
     , group : String
     , team : String
@@ -68,30 +69,30 @@ lapRecordDecoder =
             String.toFloat s
                 |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Float")
 
-        timeMilliStringToMillisResult : String -> Result String Int
-        timeMilliStringToMillisResult s =
-            timeMilliStringToMillis s
+        stringToRaceClockResult : String -> Result String Int
+        stringToRaceClockResult s =
+            RaceClock.fromString s
                 |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Int")
     in
     CD.map LapRecord
         (CD.field "NUMBER" stringToIntResult
             |> CD.andMap (CD.field "DRIVER_NUMBER" stringToIntResult)
             |> CD.andMap (CD.field "LAP_NUMBER" stringToIntResult)
-            |> CD.andMap (CD.field "LAP_TIME" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "LAP_TIME" stringToRaceClockResult)
             |> CD.andMap (CD.field "LAP_IMPROVEMENT" stringToIntResult)
             |> CD.andMap (CD.field "CROSSING_FINISH_LINE_IN_PIT" Ok)
-            |> CD.andMap (CD.field "S1" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "S1" stringToRaceClockResult)
             |> CD.andMap (CD.field "S1_IMPROVEMENT" stringToIntResult)
-            |> CD.andMap (CD.field "S2" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "S2" stringToRaceClockResult)
             |> CD.andMap (CD.field "S2_IMPROVEMENT" stringToIntResult)
-            |> CD.andMap (CD.field "S3" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "S3" stringToRaceClockResult)
             |> CD.andMap (CD.field "S3_IMPROVEMENT" stringToIntResult)
             |> CD.andMap (CD.field "KPH" stringToFloatResult)
-            |> CD.andMap (CD.field "ELAPSED" timeMilliStringToMillisResult)
-            |> CD.andMap (CD.field "HOUR" timeMilliStringToMillisResult)
+            |> CD.andMap (CD.field "ELAPSED" stringToRaceClockResult)
+            |> CD.andMap (CD.field "HOUR" stringToRaceClockResult)
             |> CD.andMap (CD.field "TOP_SPEED" stringToFloatResult)
             |> CD.andMap (CD.field "DRIVER_NAME" Ok)
-            |> CD.andMap (CD.field "PIT_TIME" Ok)
+            |> CD.andMap (CD.field "PIT_TIME" <| CD.maybe stringToRaceClockResult)
             |> CD.andMap (CD.field "CLASS" Ok)
             |> CD.andMap (CD.field "GROUP" Ok)
             |> CD.andMap (CD.field "TEAM" Ok)
@@ -196,16 +197,16 @@ view { lapRecordsByCarNumber } =
                                 List.map (\getter -> td [] [ text <| getter lap ])
                                     [ .carNumber >> String.fromInt
                                     , .lapNumber >> String.fromInt
-                                    , .lapTime >> millisToTimeMilliString
-                                    , .s1 >> millisToTimeMilliString
-                                    , .s2 >> millisToTimeMilliString
-                                    , .s3 >> millisToTimeMilliString
+                                    , .lapTime >> RaceClock.toString
+                                    , .s1 >> RaceClock.toString
+                                    , .s2 >> RaceClock.toString
+                                    , .s3 >> RaceClock.toString
                                     , .kph >> String.fromFloat
-                                    , .elapsed >> millisToTimeMilliString
-                                    , .hour >> millisToTimeMilliString
+                                    , .elapsed >> RaceClock.toString
+                                    , .hour >> RaceClock.toString
                                     , .topSpeed >> String.fromFloat
                                     , .driverName
-                                    , .pitTime
+                                    , .pitTime >> Maybe.map RaceClock.toString >> Maybe.withDefault ""
                                     , .class
                                     , .group
                                     , .team
@@ -223,99 +224,3 @@ view { lapRecordsByCarNumber } =
             ]
         ]
     }
-
-
-
--- HELPER
-
-
-{-|
-
-    timeMilliStringToMillis "0.000"
-    --> Just 0
-
-    timeMilliStringToMillis "4.321"
-    --> Just 4321
-
-    timeMilliStringToMillis "06:54.321"
-    --> Just 414321
-
-    timeMilliStringToMillis "7:06:54.321"
-    --> Just 25614321
-
--}
-timeMilliStringToMillis : String -> Maybe Int
-timeMilliStringToMillis str =
-    let
-        fromHours h =
-            String.toInt h |> Maybe.map ((*) 3600000)
-
-        fromMinutes m =
-            String.toInt m |> Maybe.map ((*) 60000)
-
-        fromSeconds s =
-            String.toFloat s |> Maybe.map ((*) 1000 >> floor)
-    in
-    case String.split ":" str of
-        [ h, m, s ] ->
-            Maybe.map3 (\h_ m_ s_ -> h_ + m_ + s_)
-                (fromHours h)
-                (fromMinutes m)
-                (fromSeconds s)
-
-        [ m, s ] ->
-            Maybe.map2 (+)
-                (fromMinutes m)
-                (fromSeconds s)
-
-        [ s ] ->
-            fromSeconds s
-
-        _ ->
-            Nothing
-
-
-{-|
-
-    millisToTimeMilliString 0
-    --> "00:00.000"
-
-    millisToTimeMilliString 4321
-    --> "00:04.321"
-
-    millisToTimeMilliString 414321
-    --> "06:54.321"
-
-    millisToTimeMilliString 25614321
-    --> "07:06:54.321"
-
--}
-millisToTimeMilliString : Int -> String
-millisToTimeMilliString millis =
-    let
-        h =
-            (millis // 3600000)
-                |> String.fromInt
-                |> String.padLeft 2 '0'
-
-        m =
-            (remainderBy 3600000 millis // 60000)
-                |> String.fromInt
-                |> String.padLeft 2 '0'
-
-        s =
-            (remainderBy 60000 millis // 1000)
-                |> String.fromInt
-                |> String.padLeft 2 '0'
-
-        ms =
-            remainderBy 1000 millis
-                |> String.fromInt
-                |> String.padRight 3 '0'
-                |> (++) "."
-    in
-    if millis >= 3600000 then
-        String.join ":" [ h, m, s ++ ms ]
-
-    else
-        String.join ":" [ m, s ++ ms ]

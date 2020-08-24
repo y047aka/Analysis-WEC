@@ -9,7 +9,13 @@ import Data.Lap exposing (Lap, lapDecoder)
 import Data.RaceClock as RaceClock
 import Html exposing (Html, main_, table, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
+import List.Extra as List
 import Parser exposing (deadEndsToString)
+import TypedSvg exposing (g, svg, text_)
+import TypedSvg.Attributes exposing (viewBox)
+import TypedSvg.Attributes.InPx exposing (x, y)
+import TypedSvg.Core exposing (Svg)
+import TypedSvg.Types exposing (Transform(..))
 
 
 main : Program () Model Msg
@@ -28,12 +34,13 @@ main =
 
 type alias Model =
     { lapsByCarNumber : List ( Int, List Lap )
+    , ordersByLap : List ( Int, List Lap )
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { lapsByCarNumber = [] }
+    ( { lapsByCarNumber = [], ordersByLap = [] }
     , Http.get
         { url = "23_Analysis_Race_Hour 6.csv"
         , expect = expectCsv Loaded lapDecoder
@@ -98,6 +105,11 @@ update msg model =
                     laps
                         |> AssocList.Extra.groupBy .carNumber
                         |> AssocList.toList
+                , ordersByLap =
+                    laps
+                        |> AssocList.Extra.groupBy .lapNumber
+                        |> AssocList.toList
+                        |> List.map (Tuple.mapSecond <| List.sortBy .elapsed)
               }
             , Cmd.none
             )
@@ -111,12 +123,69 @@ update msg model =
 
 
 view : Model -> Document Msg
-view { lapsByCarNumber } =
+view model =
     { title = ""
     , body =
-        [ main_ [] [ decodeTestTable lapsByCarNumber ]
+        [ main_ [] [ orderTimelineTableByLap model ]
         ]
     }
+
+
+w : Float
+w =
+    1800
+
+
+h : Float
+h =
+    900
+
+
+orderTimelineTableByLap : Model -> Svg msg
+orderTimelineTableByLap m =
+    let
+        historyFor startPosition ( _, laps ) =
+            g []
+                [ heading startPosition laps
+                , g [] <| positions laps
+                ]
+
+        heading startPosition laps =
+            List.head laps
+                |> Maybe.map
+                    (\l ->
+                        g []
+                            [ text_
+                                [ x 10
+                                , y <| toFloat (30 * startPosition)
+                                ]
+                                [ text <| String.join " " [ String.fromInt l.carNumber, l.driverName ] ]
+                            ]
+                    )
+                |> Maybe.withDefault (text "")
+
+        positions laps =
+            List.indexedMap
+                (\lapCount lap ->
+                    text_
+                        [ x <| toFloat (10 * lapCount + 200)
+                        , y <| toFloat (30 * (Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap))
+                        ]
+                        [ text (String.fromInt lap.carNumber) ]
+                )
+                laps
+
+        getOrderAt : Lap -> List ( Int, List Lap ) -> Maybe Int
+        getOrderAt lap ordersByLap =
+            List.find (Tuple.first >> (==) lap.lapNumber) ordersByLap
+                |> Maybe.map Tuple.second
+                |> Maybe.andThen (List.findIndex (.carNumber >> (==) lap.carNumber))
+    in
+    svg [ viewBox 0 0 w h ] <|
+        (m.lapsByCarNumber
+            |> List.sortBy (Tuple.second >> List.head >> Maybe.map .elapsed >> Maybe.withDefault 0)
+            |> List.indexedMap historyFor
+        )
 
 
 decodeTestTable : List ( Int, List Lap ) -> Html msg

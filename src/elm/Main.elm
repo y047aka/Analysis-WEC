@@ -8,14 +8,13 @@ import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
 import Data.Lap exposing (Lap, lapDecoder)
 import Data.RaceClock as RaceClock
-import Html exposing (Html, main_, table, tbody, td, text, th, thead, tr)
+import Html.Styled exposing (Html, main_, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import List.Extra as List
 import Parser exposing (deadEndsToString)
-import TypedSvg exposing (g, polyline, svg, text_)
-import TypedSvg.Attributes exposing (fill, points, stroke, viewBox)
-import TypedSvg.Attributes.InPx exposing (x, y)
-import TypedSvg.Core exposing (Svg)
+import Svg.Styled exposing (Svg, g, polyline, svg)
+import TypedSvg.Styled.Attributes exposing (fill, points, stroke, viewBox)
+import TypedSvg.Styled.Attributes.InPx exposing (x, y)
 import TypedSvg.Types exposing (Paint(..), Transform(..))
 
 
@@ -127,7 +126,8 @@ view : Model -> Document Msg
 view model =
     { title = ""
     , body =
-        [ main_ [] [ lapChart model ]
+        [ Html.Styled.toUnstyled <|
+            main_ [] [ lapChart model ]
         ]
     }
 
@@ -158,7 +158,7 @@ lapChart m =
                 |> Maybe.map
                     (\l ->
                         g []
-                            [ text_
+                            [ Svg.Styled.text_
                                 [ x 10
                                 , y <| toFloat <| (+) 30 <| (*) 30 <| startPosition
                                 ]
@@ -170,7 +170,7 @@ lapChart m =
         positions laps =
             List.map
                 (\lap ->
-                    text_
+                    Svg.Styled.text_
                         [ x <| toFloat <| (+) 200 <| (*) 10 <| lap.lapNumber
                         , y <| toFloat <| (+) 30 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
                         ]
@@ -208,7 +208,7 @@ lapChart m =
 
 decodeTestTable : List ( Int, List Lap ) -> Html msg
 decodeTestTable lapsByCarNumber =
-    table []
+    Html.Styled.table []
         [ thead []
             [ tr [] <|
                 List.map (\heading -> th [] [ text heading ])

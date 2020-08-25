@@ -3,6 +3,7 @@ module Main exposing (main)
 import AssocList
 import AssocList.Extra
 import Browser exposing (Document)
+import Color
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
 import Data.Lap exposing (Lap, lapDecoder)
@@ -11,11 +12,11 @@ import Html exposing (Html, main_, table, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import List.Extra as List
 import Parser exposing (deadEndsToString)
-import TypedSvg exposing (g, svg, text_)
-import TypedSvg.Attributes exposing (viewBox)
+import TypedSvg exposing (g, polyline, svg, text_)
+import TypedSvg.Attributes exposing (fill, points, stroke, viewBox)
 import TypedSvg.Attributes.InPx exposing (x, y)
 import TypedSvg.Core exposing (Svg)
-import TypedSvg.Types exposing (Transform(..))
+import TypedSvg.Types exposing (Paint(..), Transform(..))
 
 
 main : Program () Model Msg
@@ -126,14 +127,14 @@ view : Model -> Document Msg
 view model =
     { title = ""
     , body =
-        [ main_ [] [ orderTimelineTableByLap model ]
+        [ main_ [] [ lapChart model ]
         ]
     }
 
 
 w : Float
 w =
-    1800
+    1700
 
 
 h : Float
@@ -141,13 +142,15 @@ h =
     900
 
 
-orderTimelineTableByLap : Model -> Svg msg
-orderTimelineTableByLap m =
+lapChart : Model -> Svg msg
+lapChart m =
     let
         historyFor startPosition ( _, laps ) =
             g []
                 [ heading startPosition laps
-                , g [] <| positions laps
+
+                -- , g [] <| positions laps
+                , positionsPolyline laps
                 ]
 
         heading startPosition laps =
@@ -157,9 +160,9 @@ orderTimelineTableByLap m =
                         g []
                             [ text_
                                 [ x 10
-                                , y <| toFloat (30 * startPosition)
+                                , y <| toFloat <| (+) 30 <| (*) 30 <| startPosition
                                 ]
-                                [ text <| String.join " " [ String.fromInt l.carNumber, l.driverName ] ]
+                                [ text <| String.join " " [ String.fromInt l.carNumber, l.team ] ]
                             ]
                     )
                 |> Maybe.withDefault (text "")
@@ -168,12 +171,27 @@ orderTimelineTableByLap m =
             List.indexedMap
                 (\lapCount lap ->
                     text_
-                        [ x <| toFloat (10 * lapCount + 200)
-                        , y <| toFloat (30 * (Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap))
+                        [ x <| toFloat <| (+) 200 <| (*) 10 <| lapCount
+                        , y <| toFloat <| (+) 30 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
                         ]
                         [ text (String.fromInt lap.carNumber) ]
                 )
                 laps
+
+        positionsPolyline laps =
+            polyline
+                [ fill PaintNone
+                , stroke (Paint <| Color.black)
+                , points <|
+                    List.indexedMap
+                        (\lapCount lap ->
+                            ( toFloat <| (+) 205 <| (*) 10 <| lapCount
+                            , toFloat <| (+) 25 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
+                            )
+                        )
+                        laps
+                ]
+                []
 
         getOrderAt : Lap -> List ( Int, List Lap ) -> Maybe Int
         getOrderAt lap ordersByLap =

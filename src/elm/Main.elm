@@ -168,10 +168,10 @@ lapChart m =
                 |> Maybe.withDefault (text "")
 
         positions laps =
-            List.indexedMap
-                (\lapCount lap ->
+            List.map
+                (\lap ->
                     text_
-                        [ x <| toFloat <| (+) 200 <| (*) 10 <| lapCount
+                        [ x <| toFloat <| (+) 200 <| (*) 10 <| lap.lapNumber
                         , y <| toFloat <| (+) 30 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
                         ]
                         [ text (String.fromInt lap.carNumber) ]
@@ -183,9 +183,9 @@ lapChart m =
                 [ fill PaintNone
                 , stroke (Paint <| Color.black)
                 , points <|
-                    List.indexedMap
-                        (\lapCount lap ->
-                            ( toFloat <| (+) 205 <| (*) 10 <| lapCount
+                    List.map
+                        (\lap ->
+                            ( toFloat <| (+) 205 <| (*) 10 <| lap.lapNumber
                             , toFloat <| (+) 25 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
                             )
                         )

@@ -13,8 +13,8 @@ import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import List.Extra as List
 import Parser exposing (deadEndsToString)
 import Svg.Styled exposing (Svg, g, polyline, svg)
-import TypedSvg.Styled.Attributes exposing (fill, points, stroke, viewBox)
-import TypedSvg.Styled.Attributes.InPx exposing (x, y)
+import Svg.Styled.Attributes.Typed exposing (fill, points, stroke, viewBox)
+import Svg.Styled.Attributes.Typed.InPx exposing (x, y)
 import TypedSvg.Types exposing (Paint(..), Transform(..))
 
 

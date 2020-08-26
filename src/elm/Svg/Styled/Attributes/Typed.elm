@@ -1,9 +1,4 @@
-module TypedSvg.Styled.Attributes exposing
-    ( fill
-    , points
-    , stroke
-    , viewBox
-    )
+module Svg.Styled.Attributes.Typed exposing (fill, points, stroke, viewBox)
 
 import Svg.Styled exposing (Attribute)
 import Svg.Styled.Attributes as Attributes

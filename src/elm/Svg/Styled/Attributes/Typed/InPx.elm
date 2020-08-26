@@ -1,4 +1,4 @@
-module TypedSvg.Styled.Attributes.InPx exposing (x, y)
+module Svg.Styled.Attributes.Typed.InPx exposing (x, y)
 
 import Svg.Styled exposing (Attribute)
 import Svg.Styled.Attributes as Attributes

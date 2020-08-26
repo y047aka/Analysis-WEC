@@ -3,7 +3,8 @@ module Main exposing (main)
 import AssocList
 import AssocList.Extra
 import Browser exposing (Document)
-import Color
+import Css.Extra exposing (noStyle, svgPalette)
+import Css.Palette.Svg exposing (strokeGTEAm, strokeGTEPro, strokeLMP1, strokeLMP2)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
 import Data.Lap exposing (Lap, lapDecoder)
@@ -13,7 +14,8 @@ import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import List.Extra as List
 import Parser exposing (deadEndsToString)
 import Svg.Styled exposing (Svg, g, polyline, svg)
-import Svg.Styled.Attributes.Typed exposing (fill, points, stroke, viewBox)
+import Svg.Styled.Attributes as Svg
+import Svg.Styled.Attributes.Typed exposing (points, viewBox)
 import Svg.Styled.Attributes.Typed.InPx exposing (x, y)
 import TypedSvg.Types exposing (Paint(..), Transform(..))
 
@@ -180,8 +182,23 @@ lapChart m =
 
         positionsPolyline laps =
             polyline
-                [ fill PaintNone
-                , stroke (Paint <| Color.black)
+                [ Svg.css
+                    [ case List.head laps |> Maybe.map .class |> Maybe.withDefault "" of
+                        "LMP1" ->
+                            svgPalette strokeLMP1
+
+                        "LMP2" ->
+                            svgPalette strokeLMP2
+
+                        "LMGTE Pro" ->
+                            svgPalette strokeGTEPro
+
+                        "LMGTE Am" ->
+                            svgPalette strokeGTEAm
+
+                        _ ->
+                            noStyle
+                    ]
                 , points <|
                     List.map
                         (\lap ->

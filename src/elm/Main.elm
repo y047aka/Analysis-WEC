@@ -36,8 +36,12 @@ main =
 
 type alias Model =
     { lapsByCarNumber : List ( Int, List Lap )
-    , ordersByLap : List ( Int, List Lap )
+    , ordersByLap : OrdersByLap
     }
+
+
+type alias OrdersByLap =
+    List { lapNumber : Int, order : List Int }
 
 
 init : () -> ( Model, Cmd Msg )
@@ -111,13 +115,25 @@ update msg model =
                     laps
                         |> AssocList.Extra.groupBy .lapNumber
                         |> AssocList.toList
-                        |> List.map (Tuple.mapSecond <| List.sortBy .elapsed)
+                        |> List.map
+                            (\( lapNumber, order ) ->
+                                { lapNumber = lapNumber
+                                , order = order |> List.sortBy .elapsed |> List.map .carNumber
+                                }
+                            )
               }
             , Cmd.none
             )
 
         Loaded (Err _) ->
             ( model, Cmd.none )
+
+
+getPositionAt : { carNumber : Int, lapNumber : Int } -> OrdersByLap -> Maybe Int
+getPositionAt { carNumber, lapNumber } ordersByLap =
+    ordersByLap
+        |> List.find (.lapNumber >> (==) lapNumber)
+        |> Maybe.andThen (.order >> List.findIndex ((==) carNumber))
 
 
 
@@ -171,12 +187,17 @@ lapChart m =
 
         positions laps =
             List.map
-                (\lap ->
+                (\{ carNumber, lapNumber } ->
+                    let
+                        currentPosition =
+                            getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
+                                |> Maybe.withDefault 0
+                    in
                     Svg.Styled.text_
-                        [ x <| toFloat <| (+) 200 <| (*) 10 <| lap.lapNumber
-                        , y <| toFloat <| (+) 30 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
+                        [ x <| toFloat <| (+) 200 <| (*) 10 <| lapNumber
+                        , y <| toFloat <| (+) 30 <| (*) 30 <| currentPosition
                         ]
-                        [ text (String.fromInt lap.carNumber) ]
+                        [ text (String.fromInt carNumber) ]
                 )
                 laps
 
@@ -201,20 +222,19 @@ lapChart m =
                     ]
                 , points <|
                     List.map
-                        (\lap ->
-                            ( toFloat <| (+) 205 <| (*) 10 <| lap.lapNumber
-                            , toFloat <| (+) 25 <| (*) 30 <| Maybe.withDefault 0 <| getOrderAt lap m.ordersByLap
+                        (\{ carNumber, lapNumber } ->
+                            let
+                                currentPosition =
+                                    getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
+                                        |> Maybe.withDefault 0
+                            in
+                            ( toFloat <| (+) 205 <| (*) 10 <| lapNumber
+                            , toFloat <| (+) 25 <| (*) 30 <| currentPosition
                             )
                         )
                         laps
                 ]
                 []
-
-        getOrderAt : Lap -> List ( Int, List Lap ) -> Maybe Int
-        getOrderAt lap ordersByLap =
-            List.find (Tuple.first >> (==) lap.lapNumber) ordersByLap
-                |> Maybe.map Tuple.second
-                |> Maybe.andThen (List.findIndex (.carNumber >> (==) lap.carNumber))
     in
     svg [ viewBox 0 0 w h ] <|
         (m.lapsByCarNumber

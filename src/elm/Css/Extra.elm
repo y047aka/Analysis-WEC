@@ -1,13 +1,9 @@
-module Css.Extra exposing (noStyle, palette, svgPalette)
+module Css.Extra exposing (palette, svgPalette)
 
 import Css exposing (ColorValue, Style, batch)
 import Css.Color exposing (Color(..))
 import Css.Palette exposing (Palette)
 import Css.Palette.Svg exposing (SvgPalette)
-
-
-noStyle =
-    batch []
 
 
 {-| Apply colors in batch according to `Palette`

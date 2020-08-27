@@ -3,10 +3,11 @@ module Main exposing (main)
 import AssocList
 import AssocList.Extra
 import Browser exposing (Document)
-import Css.Extra exposing (noStyle, svgPalette)
+import Css.Extra exposing (svgPalette)
 import Css.Palette.Svg exposing (strokeGTEAm, strokeGTEPro, strokeLMP1, strokeLMP2)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
+import Data.Class as Class exposing (Class(..))
 import Data.Lap exposing (Lap, lapDecoder)
 import Data.RaceClock as RaceClock
 import Html.Styled exposing (Html, main_, tbody, td, text, th, thead, tr)
@@ -46,7 +47,7 @@ type alias OrdersByLap =
 
 type alias Car =
     { carNumber : Int
-    , class : String
+    , class : Class
     , group : String
     , team : String
     , manufacturer : String
@@ -227,21 +228,19 @@ lapChart m =
         positionsPolyline { carNumber, class, laps } =
             polyline
                 [ Svg.css
-                    [ case class of
-                        "LMP1" ->
-                            svgPalette strokeLMP1
+                    [ svgPalette <|
+                        case class of
+                            LMP1 ->
+                                strokeLMP1
 
-                        "LMP2" ->
-                            svgPalette strokeLMP2
+                            LMP2 ->
+                                strokeLMP2
 
-                        "LMGTE Pro" ->
-                            svgPalette strokeGTEPro
+                            LMGTE_Pro ->
+                                strokeGTEPro
 
-                        "LMGTE Am" ->
-                            svgPalette strokeGTEAm
-
-                        _ ->
-                            noStyle
+                            LMGTE_Am ->
+                                strokeGTEAm
                     ]
                 , points <|
                     List.map
@@ -291,7 +290,7 @@ decodeTestTable lapsByCarNumber =
                             , .topSpeed >> String.fromFloat
                             , .driverName
                             , .pitTime >> Maybe.map RaceClock.toString >> Maybe.withDefault ""
-                            , .class
+                            , .class >> Class.toString
                             , .group
                             , .team
                             , .manufacturer

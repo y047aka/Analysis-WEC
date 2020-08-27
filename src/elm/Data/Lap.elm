@@ -1,6 +1,7 @@
 module Data.Lap exposing (Lap, lapDecoder)
 
 import Csv.Decode as CD exposing (Decoder)
+import Data.Class as Class exposing (Class(..))
 import Data.RaceClock as RaceClock exposing (RaceClock)
 
 
@@ -23,7 +24,7 @@ type alias Lap =
     , topSpeed : Float
     , driverName : String
     , pitTime : Maybe RaceClock
-    , class : String
+    , class : Class
     , group : String
     , team : String
     , manufacturer : String
@@ -47,6 +48,11 @@ lapDecoder =
         stringToRaceClockResult s =
             RaceClock.fromString s
                 |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Int")
+
+        stringToClassResult : String -> Result String Class
+        stringToClassResult s =
+            Class.fromString s
+                |> Result.fromMaybe ("Cannot convert '" ++ s ++ "' to Class")
     in
     CD.map Lap
         (CD.field "NUMBER" stringToIntResult
@@ -67,7 +73,7 @@ lapDecoder =
             |> CD.andMap (CD.field "TOP_SPEED" stringToFloatResult)
             |> CD.andMap (CD.field "DRIVER_NAME" Ok)
             |> CD.andMap (CD.field "PIT_TIME" <| CD.maybe stringToRaceClockResult)
-            |> CD.andMap (CD.field "CLASS" Ok)
+            |> CD.andMap (CD.field "CLASS" <| stringToClassResult)
             |> CD.andMap (CD.field "GROUP" Ok)
             |> CD.andMap (CD.field "TEAM" Ok)
             |> CD.andMap (CD.field "MANUFACTURER" Ok)

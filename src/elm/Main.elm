@@ -35,7 +35,7 @@ main =
 
 
 type alias Model =
-    { lapsByCarNumber : List ( Int, List Lap )
+    { cars : List Car
     , ordersByLap : OrdersByLap
     }
 
@@ -44,9 +44,20 @@ type alias OrdersByLap =
     List { lapNumber : Int, order : List Int }
 
 
+type alias Car =
+    { carNumber : Int
+    , class : String
+    , group : String
+    , team : String
+    , manufacturer : String
+    , startPosition : Int
+    , laps : List Lap
+    }
+
+
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { lapsByCarNumber = [], ordersByLap = [] }
+    ( { cars = [], ordersByLap = [] }
     , Http.get
         { url = "23_Analysis_Race_Hour 6.csv"
         , expect = expectCsv Loaded lapDecoder
@@ -106,12 +117,8 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Loaded (Ok laps) ->
-            ( { model
-                | lapsByCarNumber =
-                    laps
-                        |> AssocList.Extra.groupBy .carNumber
-                        |> AssocList.toList
-                , ordersByLap =
+            let
+                ordersByLap =
                     laps
                         |> AssocList.Extra.groupBy .lapNumber
                         |> AssocList.toList
@@ -121,12 +128,33 @@ update msg model =
                                 , order = order |> List.sortBy .elapsed |> List.map .carNumber
                                 }
                             )
-              }
-            , Cmd.none
-            )
+
+                cars =
+                    laps
+                        |> AssocList.Extra.groupBy .carNumber
+                        |> AssocList.toList
+                        |> List.filterMap (summarize ordersByLap)
+            in
+            ( { model | cars = cars, ordersByLap = ordersByLap }, Cmd.none )
 
         Loaded (Err _) ->
             ( model, Cmd.none )
+
+
+summarize : OrdersByLap -> ( Int, List Lap ) -> Maybe Car
+summarize ordersByLap ( carNumber, laps ) =
+    List.head laps
+        |> Maybe.map
+            (\{ class, group, team, manufacturer } ->
+                { carNumber = carNumber
+                , class = class
+                , group = group
+                , team = team
+                , manufacturer = manufacturer
+                , startPosition = Maybe.withDefault 0 <| getPositionAt { carNumber = carNumber, lapNumber = 1 } ordersByLap
+                , laps = laps
+                }
+            )
 
 
 getPositionAt : { carNumber : Int, lapNumber : Int } -> OrdersByLap -> Maybe Int
@@ -163,29 +191,24 @@ h =
 lapChart : Model -> Svg msg
 lapChart m =
     let
-        historyFor startPosition ( _, laps ) =
+        historyFor car =
             g []
-                [ heading startPosition laps
+                [ heading car
 
-                -- , g [] <| positions laps
-                , positionsPolyline laps
+                -- , g [] <| positions car
+                , positionsPolyline car
                 ]
 
-        heading startPosition laps =
-            List.head laps
-                |> Maybe.map
-                    (\l ->
-                        g []
-                            [ Svg.Styled.text_
-                                [ x 10
-                                , y <| toFloat <| (+) 30 <| (*) 30 <| startPosition
-                                ]
-                                [ text <| String.join " " [ String.fromInt l.carNumber, l.team ] ]
-                            ]
-                    )
-                |> Maybe.withDefault (text "")
+        heading { carNumber, team, startPosition } =
+            g []
+                [ Svg.Styled.text_
+                    [ x 10
+                    , y <| toFloat <| (+) 30 <| (*) 30 <| startPosition
+                    ]
+                    [ text <| String.join " " [ String.fromInt carNumber, team ] ]
+                ]
 
-        positions laps =
+        positions { laps } =
             List.map
                 (\{ carNumber, lapNumber } ->
                     let
@@ -201,10 +224,10 @@ lapChart m =
                 )
                 laps
 
-        positionsPolyline laps =
+        positionsPolyline { carNumber, class, laps } =
             polyline
                 [ Svg.css
-                    [ case List.head laps |> Maybe.map .class |> Maybe.withDefault "" of
+                    [ case class of
                         "LMP1" ->
                             svgPalette strokeLMP1
 
@@ -222,7 +245,7 @@ lapChart m =
                     ]
                 , points <|
                     List.map
-                        (\{ carNumber, lapNumber } ->
+                        (\{ lapNumber } ->
                             let
                                 currentPosition =
                                     getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
@@ -237,9 +260,9 @@ lapChart m =
                 []
     in
     svg [ viewBox 0 0 w h ] <|
-        (m.lapsByCarNumber
-            |> List.sortBy (Tuple.second >> List.head >> Maybe.map .elapsed >> Maybe.withDefault 0)
-            |> List.indexedMap historyFor
+        (m.cars
+            |> List.sortBy .startPosition
+            |> List.map historyFor
         )
 
 

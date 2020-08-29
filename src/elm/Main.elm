@@ -3,6 +3,7 @@ module Main exposing (main)
 import AssocList
 import AssocList.Extra
 import Browser exposing (Document)
+import Css exposing (block, display)
 import Css.Extra exposing (svgPalette)
 import Css.Palette.Svg exposing (strokeGTEAm, strokeGTEPro, strokeLMP1, strokeLMP2)
 import Csv
@@ -14,6 +15,7 @@ import Html.Styled exposing (Html, main_, tbody, td, text, th, thead, tr)
 import Http exposing (Error(..), Expect, Response(..), expectStringResponse)
 import List.Extra as List
 import Parser exposing (deadEndsToString)
+import Scale
 import Svg.Styled exposing (Svg, g, polyline, svg)
 import Svg.Styled.Attributes as Svg
 import Svg.Styled.Attributes.Typed exposing (points, viewBox)
@@ -181,17 +183,32 @@ view model =
 
 w : Float
 w =
-    1700
+    1600
 
 
 h : Float
 h =
-    900
+    w * (9 / 16)
+
+
+padding : { top : Float, left : Float, bottom : Float, right : Float }
+padding =
+    { top = 25, left = 20, bottom = 25, right = 20 }
 
 
 lapChart : Model -> Svg msg
 lapChart m =
     let
+        xScale =
+            List.length m.ordersByLap
+                |> (\max -> ( -20, toFloat max ))
+                |> Scale.linear ( padding.left, w - padding.right )
+
+        yScale =
+            (List.length m.cars - 1)
+                |> (\max -> ( 0, toFloat max ))
+                |> Scale.linear ( padding.top, h - padding.bottom )
+
         historyFor car =
             g []
                 [ heading car
@@ -203,8 +220,8 @@ lapChart m =
         heading { carNumber, team, startPosition } =
             g []
                 [ Svg.Styled.text_
-                    [ x 10
-                    , y <| toFloat <| (+) 30 <| (*) 30 <| startPosition
+                    [ x <| Scale.convert xScale <| -20
+                    , y <| (+) 5 <| Scale.convert yScale <| toFloat <| startPosition
                     ]
                     [ text <| String.join " " [ String.fromInt carNumber, team ] ]
                 ]
@@ -218,8 +235,8 @@ lapChart m =
                                 |> Maybe.withDefault 0
                     in
                     Svg.Styled.text_
-                        [ x <| toFloat <| (+) 200 <| (*) 10 <| lapNumber
-                        , y <| toFloat <| (+) 30 <| (*) 30 <| currentPosition
+                        [ x <| Scale.convert xScale <| toFloat <| lapNumber
+                        , y <| Scale.convert yScale <| toFloat <| currentPosition
                         ]
                         [ text (String.fromInt carNumber) ]
                 )
@@ -250,15 +267,18 @@ lapChart m =
                                     getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
                                         |> Maybe.withDefault 0
                             in
-                            ( toFloat <| (+) 205 <| (*) 10 <| lapNumber
-                            , toFloat <| (+) 25 <| (*) 30 <| currentPosition
+                            ( Scale.convert xScale <| toFloat <| lapNumber
+                            , Scale.convert yScale <| toFloat <| currentPosition
                             )
                         )
                         laps
                 ]
                 []
     in
-    svg [ viewBox 0 0 w h ] <|
+    svg
+        [ viewBox 0 0 w h
+        , Svg.css [ display block ]
+        ]
         (m.cars
             |> List.sortBy .startPosition
             |> List.map historyFor

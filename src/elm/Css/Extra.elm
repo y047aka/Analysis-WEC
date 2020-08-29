@@ -1,9 +1,14 @@
-module Css.Extra exposing (palette, svgPalette)
+module Css.Extra exposing (palette, strokeWidth, svgPalette)
 
-import Css exposing (ColorValue, Style, batch)
+import Css exposing (ColorValue, Style, batch, property)
 import Css.Color exposing (Color(..))
 import Css.Palette exposing (Palette)
 import Css.Palette.Svg exposing (SvgPalette)
+
+
+strokeWidth : Float -> Style
+strokeWidth w =
+    property "stroke-width" (String.fromFloat w)
 
 
 {-| Apply colors in batch according to `Palette`

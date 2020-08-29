@@ -1,9 +1,9 @@
-module Svg.Styled.Attributes.Typed exposing (fill, points, stroke, viewBox)
+module Svg.Styled.Attributes.Typed exposing (fill, points, stroke, transform, viewBox)
 
 import Svg.Styled exposing (Attribute)
 import Svg.Styled.Attributes as Attributes
-import TypedSvg.Types exposing (Paint)
-import TypedSvg.TypesToStrings exposing (paintToString)
+import TypedSvg.Types exposing (Paint, Transform)
+import TypedSvg.TypesToStrings exposing (paintToString, transformToString)
 
 
 fill : Paint -> Attribute msg
@@ -23,6 +23,11 @@ points pts =
 stroke : Paint -> Attribute msg
 stroke =
     Attributes.stroke << paintToString
+
+
+transform : List Transform -> Attribute msg
+transform transforms =
+    Attributes.transform <| String.join " " (List.map transformToString transforms)
 
 
 viewBox : Float -> Float -> Float -> Float -> Attribute a

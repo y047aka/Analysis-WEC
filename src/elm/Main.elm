@@ -4,8 +4,9 @@ import AssocList
 import AssocList.Extra
 import Browser exposing (Document)
 import Css exposing (block, display)
-import Css.Extra exposing (svgPalette)
-import Css.Palette.Svg exposing (strokeGTEAm, strokeGTEPro, strokeLMP1, strokeLMP2)
+import Css.Extra exposing (strokeWidth, svgPalette)
+import Css.Global exposing (descendants, each)
+import Css.Palette.Svg exposing (..)
 import Csv
 import Csv.Decode as CD exposing (Decoder, Errors(..))
 import Data.Class as Class exposing (Class(..))
@@ -18,8 +19,9 @@ import Parser exposing (deadEndsToString)
 import Scale
 import Svg.Styled exposing (Svg, g, polyline, svg)
 import Svg.Styled.Attributes as Svg
-import Svg.Styled.Attributes.Typed exposing (points, viewBox)
+import Svg.Styled.Attributes.Typed exposing (points, transform, viewBox)
 import Svg.Styled.Attributes.Typed.InPx exposing (x, y)
+import Svg.Styled.Axis as Axis
 import TypedSvg.Types exposing (Paint(..), Transform(..))
 
 
@@ -193,7 +195,7 @@ h =
 
 padding : { top : Float, left : Float, bottom : Float, right : Float }
 padding =
-    { top = 25, left = 20, bottom = 25, right = 20 }
+    { top = 25 + 30, left = 20 + 190, bottom = 25 + 30, right = 20 }
 
 
 lapChart : Model -> Svg msg
@@ -201,13 +203,46 @@ lapChart m =
     let
         xScale =
             List.length m.ordersByLap
-                |> (\max -> ( -20, toFloat max ))
+                |> (\max -> ( 0, toFloat max ))
                 |> Scale.linear ( padding.left, w - padding.right )
 
         yScale =
             (List.length m.cars - 1)
                 |> (\max -> ( 0, toFloat max ))
                 |> Scale.linear ( padding.top, h - padding.bottom )
+
+        xAxis =
+            g
+                [ Svg.css
+                    [ descendants
+                        [ Css.Global.typeSelector "text" [ svgPalette textOptional ]
+                        , each
+                            [ Css.Global.typeSelector "line"
+                            , Css.Global.typeSelector "path"
+                            ]
+                            [ strokeWidth 1
+                            , svgPalette strokeAxis
+                            ]
+                        ]
+                    ]
+                ]
+                [ g [ transform [ Translate 0 (padding.top - 20) ] ]
+                    [ Axis.top
+                        [ Axis.tickCount <| (List.length m.ordersByLap // 10)
+                        , Axis.tickSizeOuter 5
+                        , Axis.tickSizeInner 5
+                        ]
+                        xScale
+                    ]
+                , g [ transform [ Translate 0 (h - padding.bottom + 20) ] ]
+                    [ Axis.bottom
+                        [ Axis.tickCount <| (List.length m.ordersByLap // 10)
+                        , Axis.tickSizeOuter 5
+                        , Axis.tickSizeInner 5
+                        ]
+                        xScale
+                    ]
+                ]
 
         historyFor car =
             g []
@@ -279,10 +314,13 @@ lapChart m =
         [ viewBox 0 0 w h
         , Svg.css [ display block ]
         ]
-        (m.cars
-            |> List.sortBy .startPosition
-            |> List.map historyFor
-        )
+        [ g []
+            (m.cars
+                |> List.sortBy .startPosition
+                |> List.map historyFor
+            )
+        , xAxis
+        ]
 
 
 decodeTestTable : List ( Int, List Lap ) -> Html msg

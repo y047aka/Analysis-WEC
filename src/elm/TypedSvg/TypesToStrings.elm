@@ -1,7 +1,7 @@
-module TypedSvg.TypesToStrings exposing (lengthToString, paintToString)
+module TypedSvg.TypesToStrings exposing (lengthToString, paintToString, transformToString)
 
 import Color exposing (toCssString)
-import TypedSvg.Types exposing (Length(..), Paint(..))
+import TypedSvg.Types exposing (Length(..), Paint(..), Transform(..))
 
 
 lengthToString : Length -> String
@@ -55,3 +55,34 @@ paintToString paint =
 
         PaintNone ->
             "none"
+
+
+transformToString : Transform -> String
+transformToString xform =
+    let
+        tr name args =
+            String.concat
+                [ name
+                , "("
+                , String.join " " (List.map String.fromFloat args)
+                , ")"
+                ]
+    in
+    case xform of
+        Matrix a b c d e f ->
+            tr "matrix" [ a, b, c, d, e, f ]
+
+        Rotate a x y ->
+            tr "rotate" [ a, x, y ]
+
+        Scale x y ->
+            tr "scale" [ x, y ]
+
+        SkewX x ->
+            tr "skewX" [ x ]
+
+        SkewY y ->
+            tr "skewY" [ y ]
+
+        Translate x y ->
+            tr "translate" [ x, y ]

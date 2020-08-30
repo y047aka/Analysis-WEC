@@ -56,6 +56,7 @@ type alias Car =
     , team : String
     , manufacturer : String
     , startPosition : Int
+    , positions : List Int
     , laps : List Lap
     }
 
@@ -157,6 +158,10 @@ summarize ordersByLap ( carNumber, laps ) =
                 , team = team
                 , manufacturer = manufacturer
                 , startPosition = Maybe.withDefault 0 <| getPositionAt { carNumber = carNumber, lapNumber = 1 } ordersByLap
+                , positions =
+                    List.indexedMap
+                        (\index _ -> Maybe.withDefault 0 <| getPositionAt { carNumber = carNumber, lapNumber = index + 1 } ordersByLap)
+                        laps
                 , laps = laps
                 }
             )
@@ -264,18 +269,14 @@ lapChart m =
             in
             g [] [ Svg.Styled.text_ [ x coordinate.x, y coordinate.y ] [ text label ] ]
 
-        positionsGroup { laps } =
+        positionsGroup { carNumber, startPosition, positions } =
             g [] <|
-                List.map
-                    (\{ carNumber, lapNumber } ->
+                List.indexedMap
+                    (\index position ->
                         let
-                            currentPosition =
-                                getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
-                                    |> Maybe.withDefault 0
-
                             coordinate =
-                                { x = Scale.convert xScale <| toFloat <| lapNumber
-                                , y = Scale.convert yScale <| toFloat <| currentPosition
+                                { x = Scale.convert xScale <| toFloat <| index
+                                , y = Scale.convert yScale <| toFloat <| position
                                 }
 
                             label =
@@ -283,9 +284,9 @@ lapChart m =
                         in
                         Svg.Styled.text_ [ x coordinate.x, y coordinate.y ] [ text label ]
                     )
-                    laps
+                    (startPosition :: positions)
 
-        positionsPolyline { carNumber, class, laps } =
+        positionsPolyline { class, startPosition, positions } =
             let
                 svgPalette_ =
                     case class of
@@ -304,21 +305,17 @@ lapChart m =
             polyline
                 [ Svg.css [ svgPalette svgPalette_ ]
                 , points <|
-                    List.map
-                        (\{ lapNumber } ->
+                    List.indexedMap
+                        (\index position ->
                             let
-                                currentPosition =
-                                    getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
-                                        |> Maybe.withDefault 0
-
                                 coordinate =
-                                    { x = Scale.convert xScale <| toFloat <| lapNumber
-                                    , y = Scale.convert yScale <| toFloat <| currentPosition
+                                    { x = Scale.convert xScale <| toFloat <| index
+                                    , y = Scale.convert yScale <| toFloat <| position
                                     }
                             in
                             ( coordinate.x, coordinate.y )
                         )
-                        laps
+                        (startPosition :: positions)
                 ]
                 []
     in

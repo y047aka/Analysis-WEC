@@ -248,52 +248,61 @@ lapChart m =
             g []
                 [ heading car
 
-                -- , g [] <| positions car
+                -- , positionsGroup car
                 , positionsPolyline car
                 ]
 
         heading { carNumber, team, startPosition } =
-            g []
-                [ Svg.Styled.text_
-                    [ x <| Scale.convert xScale <| -20
-                    , y <| (+) 5 <| Scale.convert yScale <| toFloat <| startPosition
-                    ]
-                    [ text <| String.join " " [ String.fromInt carNumber, team ] ]
-                ]
+            let
+                coordinate =
+                    { x = Scale.convert xScale -20
+                    , y = (+) 5 <| Scale.convert yScale <| toFloat <| startPosition
+                    }
 
-        positions { laps } =
-            List.map
-                (\{ carNumber, lapNumber } ->
-                    let
-                        currentPosition =
-                            getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
-                                |> Maybe.withDefault 0
-                    in
-                    Svg.Styled.text_
-                        [ x <| Scale.convert xScale <| toFloat <| lapNumber
-                        , y <| Scale.convert yScale <| toFloat <| currentPosition
-                        ]
-                        [ text (String.fromInt carNumber) ]
-                )
-                laps
+                label =
+                    String.join " " [ String.fromInt carNumber, team ]
+            in
+            g [] [ Svg.Styled.text_ [ x coordinate.x, y coordinate.y ] [ text label ] ]
+
+        positionsGroup { laps } =
+            g [] <|
+                List.map
+                    (\{ carNumber, lapNumber } ->
+                        let
+                            currentPosition =
+                                getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
+                                    |> Maybe.withDefault 0
+
+                            coordinate =
+                                { x = Scale.convert xScale <| toFloat <| lapNumber
+                                , y = Scale.convert yScale <| toFloat <| currentPosition
+                                }
+
+                            label =
+                                String.fromInt carNumber
+                        in
+                        Svg.Styled.text_ [ x coordinate.x, y coordinate.y ] [ text label ]
+                    )
+                    laps
 
         positionsPolyline { carNumber, class, laps } =
+            let
+                svgPalette_ =
+                    case class of
+                        LMP1 ->
+                            strokeLMP1
+
+                        LMP2 ->
+                            strokeLMP2
+
+                        LMGTE_Pro ->
+                            strokeGTEPro
+
+                        LMGTE_Am ->
+                            strokeGTEAm
+            in
             polyline
-                [ Svg.css
-                    [ svgPalette <|
-                        case class of
-                            LMP1 ->
-                                strokeLMP1
-
-                            LMP2 ->
-                                strokeLMP2
-
-                            LMGTE_Pro ->
-                                strokeGTEPro
-
-                            LMGTE_Am ->
-                                strokeGTEAm
-                    ]
+                [ Svg.css [ svgPalette svgPalette_ ]
                 , points <|
                     List.map
                         (\{ lapNumber } ->
@@ -301,10 +310,13 @@ lapChart m =
                                 currentPosition =
                                     getPositionAt { carNumber = carNumber, lapNumber = lapNumber } m.ordersByLap
                                         |> Maybe.withDefault 0
+
+                                coordinate =
+                                    { x = Scale.convert xScale <| toFloat <| lapNumber
+                                    , y = Scale.convert yScale <| toFloat <| currentPosition
+                                    }
                             in
-                            ( Scale.convert xScale <| toFloat <| lapNumber
-                            , Scale.convert yScale <| toFloat <| currentPosition
-                            )
+                            ( coordinate.x, coordinate.y )
                         )
                         laps
                 ]
